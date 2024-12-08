@@ -13,4 +13,9 @@ class ViewController {
     fun home(model: Model): String {
         return "index"
     }
+
+    @GetMapping("/2")
+    fun home2(model: Model): String {
+        return "index2"
+    }
 }
