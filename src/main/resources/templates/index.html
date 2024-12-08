@@ -1,0 +1,30 @@
+<!DOCTYPE html>
+<script>
+    const sse = new EventSource("http://localhost:8080/event/connect");
+
+    sse.addEventListener('connect', (e) => {
+        const { data: receivedConnectData } = e;
+        console.log('connect event data: ',receivedConnectData);  // "connected!"
+    });
+
+    sse.addEventListener('count', (e) => {
+        const { data: receivedConnectData } = e;
+        console.log('count event data: ',receivedConnectData);
+    });
+
+    sse.addEventListener('message', (e) => {
+        const { data: receivedMessageData } = e;
+        console.log('message event data: ',receivedMessageData);
+    });
+</script>
+
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Spring</title>
+</head>
+<body>
+Hello
+<a href="/hello">hello</a>
+</body>
+</html>
