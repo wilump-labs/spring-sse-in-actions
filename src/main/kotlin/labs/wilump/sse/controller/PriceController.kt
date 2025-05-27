@@ -1,39 +1,24 @@
 package labs.wilump.sse.controller
 
-import kotlinx.coroutines.*
-import kotlinx.coroutines.flow.*
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.ExecutorCoroutineDispatcher
+import kotlinx.coroutines.asCoroutineDispatcher
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.flow
+import kotlinx.coroutines.flow.flowOn
 import labs.wilump.sse.logger
 import org.springframework.http.MediaType
-import org.springframework.http.ResponseEntity
+import org.springframework.http.client.JdkClientHttpRequestFactory
 import org.springframework.web.bind.annotation.GetMapping
 import org.springframework.web.bind.annotation.RequestMapping
 import org.springframework.web.bind.annotation.RestController
 import org.springframework.web.client.RestClient
-import org.springframework.web.servlet.mvc.method.annotation.SseEmitter
-import java.math.BigDecimal
+import java.net.http.HttpClient
 import java.util.concurrent.Executors
-import kotlin.coroutines.CoroutineContext
-import kotlin.coroutines.EmptyCoroutineContext
-
 
 val Dispatchers.VIRTUAL_THREAD: ExecutorCoroutineDispatcher
     get() = Executors.newVirtualThreadPerTaskExecutor().asCoroutineDispatcher()
-
-fun <T> CoroutineScope.asyncOnVirtualThread(
-    context: CoroutineContext = EmptyCoroutineContext,
-    start: CoroutineStart = CoroutineStart.DEFAULT,
-    block: suspend CoroutineScope.() -> T,
-): Deferred<T> {
-    return async(Dispatchers.VIRTUAL_THREAD + context, start, block)
-}
-
-fun CoroutineScope.launchOnVirtualThread(
-    context: CoroutineContext = EmptyCoroutineContext,
-    start: CoroutineStart = CoroutineStart.DEFAULT,
-    block: suspend CoroutineScope.() -> Unit,
-): Job {
-    return launch(Dispatchers.VIRTUAL_THREAD + context, start, block)
-}
 
 @RestController
 @RequestMapping("/price")
@@ -43,6 +28,13 @@ class PriceController {
     private val restClient by lazy {
         RestClient.builder()
             .baseUrl("https://crix-api-cdn.upbit.com/v1/crix/trades/days?code=CRIX.UPBIT.KRW-BTC&count=1&convertingPriceUnit=KRW")
+            .requestFactory(
+                JdkClientHttpRequestFactory(
+                    HttpClient.newBuilder()
+                        .executor(Executors.newVirtualThreadPerTaskExecutor())
+                        .build()
+                )
+            )
             .build()
     }
 
@@ -67,8 +59,15 @@ class PriceController {
                 val price = getPrice()
                 val data = mapOf("krw-btc" to String.format("%.0f", price))
                 emit(data)
-                delay(1000)
+                delay(5000)
             }
         }.flowOn(Dispatchers.VIRTUAL_THREAD)
+    }
+
+    @GetMapping("/threads")
+    fun thread(): String {
+        val currThread = Thread.currentThread()
+        log.info("Current thread: $currThread")
+        return currThread.name
     }
 }
